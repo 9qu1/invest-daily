@@ -1,0 +1,14 @@
+{
+  "name": "invest-daily",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "投資デイリー — 1日3回、株式市場をやさしく整理",
+  "scripts": {
+    "build": "node build.js",
+    "serve": "node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "marked": "^16.0.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "_readme": "ASP(もしもアフィリエイト・A8.netなど)で発行した広告コード(HTML)を下の枠に貼り付けてpushすると、全ページに自動反映されます。空文字のままなら何も表示されません。",
+  "article_top": "",
+  "article_bottom": "",
+  "footer_banner": ""
+}
