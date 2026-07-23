@@ -1,5 +1,6 @@
 node_modules/
 dist/
 .secrets.json
+.sns-posted.json
 .DS_Store
 Thumbs.db
