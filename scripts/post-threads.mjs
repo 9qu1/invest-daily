@@ -4,10 +4,12 @@
 // 未設定なら何もせず正常終了する。トークンの延長(60日期限)は自動で行う。
 //
 // Meta側の一時的なブロック(「API access blocked」等)対策:
+//   - 開始前・投稿間にランダムな待機を入れ、機械的な連投パターンを避ける
 //   - 一時エラーは指数バックオフ付きで自動リトライする
-//   - コンテナ作成 → 公開 の間と、日本語 → 英語 の間に十分な間隔を空ける
 //   - 投稿済みの記事×言語は .sns-posted.json に記録し、再実行時に二重投稿しない
 //     (同じ文面の連投はMeta側のスパム判定を招くため)
+//   - ブロックされている間はエラー終了せず、警告を出して正常終了する
+// 環境変数 THREADS_NO_DELAY=1 を付けると待機を全て無効化する(手動の動作確認用)。
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,9 +20,11 @@ const STATE_PATH = join(ROOT, '.sns-posted.json');
 const API = 'https://graph.threads.net';
 
 // 投稿ペース(ミリ秒)。Metaは短時間の連続投稿をスパムとみなすことがあるため広めに取る。
-const WAIT_BEFORE_PUBLISH = 25_000; // コンテナ作成後、公開までの待ち時間
-const WAIT_BETWEEN_POSTS = 90_000; // 1本目と2本目の投稿の間隔(±ジッター)
-const RETRY_DELAYS = [10_000, 45_000, 150_000, 420_000]; // 一時エラー時のバックオフ
+const NO_DELAY = process.env.THREADS_NO_DELAY === '1';
+const START_JITTER = [0, 90_000]; // 実行開始のゆらぎ(毎朝同じ時刻に始めないため)
+const WAIT_BEFORE_PUBLISH = 20_000; // コンテナ作成後、公開までの待ち時間
+const WAIT_BETWEEN_POSTS = [180_000, 300_000]; // 1本目と2本目の投稿の間隔(3〜5分のランダム)
+const RETRY_DELAYS = [10_000, 45_000]; // 一時エラー時のバックオフ
 
 if (!existsSync(SECRETS_PATH)) {
   console.log('.secrets.json が無いためThreads投稿をスキップします');
@@ -37,19 +41,22 @@ const mdPath = process.argv[2];
 if (!mdPath) { console.error('記事ファイルを指定してください'); process.exit(1); }
 
 const save = () => writeFileSync(SECRETS_PATH, JSON.stringify(secrets, null, 2));
-const sleep = (ms) => new Promise(res => setTimeout(res, ms));
-// 機械的に等間隔で叩かないよう、待ち時間に±20%のゆらぎを持たせる
-const jitter = (ms) => Math.round(ms * (0.8 + Math.random() * 0.4));
+const sleep = (ms) => (NO_DELAY ? Promise.resolve() : new Promise(res => setTimeout(res, ms)));
+// 毎回同じ間隔で叩かないよう、待ち時間を範囲内でランダムに選ぶ
+const between = ([min, max]) => Math.round(min + Math.random() * (max - min));
 
 // ---- 一時的な失敗の判定とリトライ ----
 // 恒久的な設定ミス(権限不足・トークン失効など)まで待たされないよう、
 // レート制限や一時ブロックに該当するものだけを再試行する。
 const RATE_LIMIT_CODES = new Set([1, 2, 4, 17, 32, 341, 368, 613]);
+// Meta側のアクセスブロック。この文面だけを対象にする。
+// 「Invalid OAuth access token」「Application request limit reached」は該当させない(従来どおり失敗扱い)。
+const BLOCKED_RE = /API access blocked/i;
+const isBlocked = (err) => BLOCKED_RE.test(err.message);
 function isTransient(err) {
   if (err.status >= 500 || err.status === 429) return true;
   if (RATE_LIMIT_CODES.has(err.code)) return true;
-  // code 200 は権限エラー全般だが、「API access blocked」は一時的なブロック
-  if (err.code === 200 && /blocked|temporar|rate|limit|try again/i.test(err.message)) return true;
+  if (isBlocked(err)) return true; // 短時間で解消することがあるので数回だけ試す
   return false;
 }
 
@@ -59,7 +66,7 @@ async function request(label, run) {
       return await run();
     } catch (err) {
       if (!isTransient(err) || attempt >= RETRY_DELAYS.length) throw err;
-      const wait = jitter(RETRY_DELAYS[attempt]);
+      const wait = RETRY_DELAYS[attempt];
       console.log(`⏳ ${label} が一時エラー(${err.message})。${Math.round(wait / 1000)}秒待って再試行します(${attempt + 1}/${RETRY_DELAYS.length})`);
       await sleep(wait);
     }
@@ -126,14 +133,34 @@ async function ensureToken() {
   }
 }
 
-await ensureToken();
+// 毎朝きっかり同じ時刻にAPIを叩き始めるのも機械的なパターンなので、開始を少しずらす
+const startDelay = between(START_JITTER);
+if (!NO_DELAY && startDelay > 0) {
+  console.log(`開始を${Math.round(startDelay / 1000)}秒ずらします`);
+  await sleep(startDelay);
+}
 
-// ユーザーIDを取得(初回のみAPIで解決してキャッシュ)
-if (!t.userId) {
-  const j = await get(`${API}/v1.0/me?fields=id,username&access_token=${t.token}`);
-  t.userId = j.id;
-  save();
-  console.log(`Threadsユーザー確認: @${j.username}`);
+// ブロックされている間は、スタックトレースを出して異常終了せず案内だけ出して抜ける
+function bailOnBlock(err) {
+  if (!isBlocked(err)) return; // ブロック以外(トークン不正など)は従来どおり呼び出し側で失敗扱いにする
+  console.warn('⚠️  ThreadsのAPIアクセスがMeta側でブロックされています。投稿をスキップしました。');
+  console.warn('   https://developers.facebook.com/apps/ をブラウザで直接開き、アプリの警告と認証状況を確認してください。');
+  process.exit(0);
+}
+
+try {
+  await ensureToken();
+
+  // ユーザーIDを取得(初回のみAPIで解決してキャッシュ)
+  if (!t.userId) {
+    const j = await get(`${API}/v1.0/me?fields=id,username&access_token=${t.token}`);
+    t.userId = j.id;
+    save();
+    console.log(`Threadsユーザー確認: @${j.username}`);
+  }
+} catch (err) {
+  bailOnBlock(err);
+  throw err;
 }
 
 // ---- 記事情報から投稿文を作る ----
@@ -179,8 +206,9 @@ for (const p of posts) {
     continue;
   }
   if (posted > 0) {
-    const wait = jitter(WAIT_BETWEEN_POSTS);
-    console.log(`次の投稿まで${Math.round(wait / 1000)}秒待ちます`);
+    // 日英をリンク付きで数秒差で連投するのは典型的なbotの挙動なので、毎回異なる間隔を空ける
+    const wait = between(WAIT_BETWEEN_POSTS);
+    if (!NO_DELAY) console.log(`次の投稿まで${Math.round(wait / 60_000 * 10) / 10}分待ちます`);
     await sleep(wait);
   }
 
@@ -204,6 +232,7 @@ for (const p of posts) {
     saveState();
     console.log(`✅ Threadsに投稿しました(${p.lang}): ${permalink || `media_id=${published.id}`}`);
   } catch (err) {
+    bailOnBlock(err); // ブロック中は残りも通らないので、ここで正常終了する
     // 1本失敗しても残りは試す。成功分は記録済みなので再実行しても重複しない。
     failed++;
     console.error(`❌ Threads投稿に失敗しました(${p.lang}): ${err.message}`);
