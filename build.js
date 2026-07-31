@@ -164,6 +164,7 @@ ${a.html}
   </div>
   <div class="disclaimer">※本記事は情報提供を目的としたものであり、特定の金融商品の売買を推奨するものではありません。掲載データの正確性は保証されません。投資に関する最終決定はご自身の判断と責任で行ってください。</div>
   ${adSlot(ads.article_bottom)}
+  ${adSlot(ads.article_click)}
   <div class="share">
     <span>この記事をシェア:</span>
     <a rel="nofollow noopener" target="_blank" href="https://twitter.com/intent/tweet?text=${share}&url=${shareUrl}">X</a>
