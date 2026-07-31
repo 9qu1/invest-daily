@@ -92,6 +92,7 @@ function layout({ title, description, pageUrl, body, jsonld = '', ogType = 'webs
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./styles.css">
+${site.adsenseClient ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${site.adsenseClient}" crossorigin="anonymous"></script>` : ''}
 ${jsonld}
 </head>
 <body>
