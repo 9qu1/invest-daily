@@ -1,8 +1,10 @@
 {
-  "_readme": "ASPの広告コード置き場。広告は記事ページの本文下(article_bottom)のみに表示する方針(2026-07-22ユーザー指定)。_spare_* は未使用の予備。",
+  "_readme": "ASPの広告コード置き場。広告は記事ページの本文下(article_bottom)のみに表示する方針(2026-07-22ユーザー指定)。2026-09-01にA8バナー・忍者AdMaxからadstirへ切り替え。旧コードは _spare_* に退避してある(復帰用)。",
   "article_top": "",
-  "article_click": "<!-- admax -->\n<script src=\"https://adm.shinobi.jp/s/69e6412e799b56c6d04da2c9cbc1d886\"></script>\n<!-- admax -->",
-  "article_bottom": "<a href=\"https://px.a8.net/svt/ejp?a8mat=4B86H1+BIDQL6+1WP2+15P77L\" rel=\"nofollow\">\n<img border=\"0\" width=\"300\" height=\"250\" alt=\"\" src=\"https://www24.a8.net/svt/bgt?aid=260722117696&wid=002&eno=01&mid=s00000008903007004000&mc=1\"></a>\n<img border=\"0\" width=\"1\" height=\"1\" src=\"https://www14.a8.net/0.gif?a8mat=4B86H1+BIDQL6+1WP2+15P77L\" alt=\"\">",
+  "article_click": "",
+  "article_bottom": "<script type=\"text/javascript\">\nvar adstir_vars = {\n  ver: \"4.0\",\n  app_id: \"MEDIA-471f7098\",\n  ad_spot: 1,\n  center: false\n};\n</script>\n<script type=\"text/javascript\" src=\"https://js.ad-stir.com/js/adstir.js\"></script>",
   "footer_banner": "",
-  "_spare_banner_1": "<a href=\"https://px.a8.net/svt/ejp?a8mat=4B86H1+BG0062+1WP2+NXESX\" rel=\"nofollow\">\n<img border=\"0\" width=\"250\" height=\"250\" alt=\"\" src=\"https://www24.a8.net/svt/bgt?aid=260722117692&wid=002&eno=01&mid=s00000008903004019000&mc=1\"></a>\n<img border=\"0\" width=\"1\" height=\"1\" src=\"https://www18.a8.net/0.gif?a8mat=4B86H1+BG0062+1WP2+NXESX\" alt=\"\">"
+  "_spare_banner_1": "<a href=\"https://px.a8.net/svt/ejp?a8mat=4B86H1+BG0062+1WP2+NXESX\" rel=\"nofollow\">\n<img border=\"0\" width=\"250\" height=\"250\" alt=\"\" src=\"https://www24.a8.net/svt/bgt?aid=260722117692&wid=002&eno=01&mid=s00000008903004019000&mc=1\"></a>\n<img border=\"0\" width=\"1\" height=\"1\" src=\"https://www18.a8.net/0.gif?a8mat=4B86H1+BG0062+1WP2+NXESX\" alt=\"\">",
+  "_spare_a8_bottom": "<a href=\"https://px.a8.net/svt/ejp?a8mat=4B86H1+BIDQL6+1WP2+15P77L\" rel=\"nofollow\">\n<img border=\"0\" width=\"300\" height=\"250\" alt=\"\" src=\"https://www24.a8.net/svt/bgt?aid=260722117696&wid=002&eno=01&mid=s00000008903007004000&mc=1\"></a>\n<img border=\"0\" width=\"1\" height=\"1\" src=\"https://www14.a8.net/0.gif?a8mat=4B86H1+BIDQL6+1WP2+15P77L\" alt=\"\">",
+  "_spare_admax": "<!-- admax -->\n<script src=\"https://adm.shinobi.jp/s/69e6412e799b56c6d04da2c9cbc1d886\"></script>\n<!-- admax -->"
 }
