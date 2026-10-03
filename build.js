@@ -77,6 +77,14 @@ function layout({ title, description, pageUrl, body, jsonld = '', ogType = 'webs
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Google tag (gtag.js) - GA4: 9qu1.com -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1T31EDBJBY"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1T31EDBJBY');
+</script>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${pageUrl}">
